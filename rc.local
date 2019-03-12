@@ -1,0 +1,61 @@
+#!/bin/sh -e
+#
+# rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+# By default this script does nothing.
+
+# Print the IP address
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+  printf "My IP address is %s\n" "$_IP"
+fi
+
+# Check to see if display is not connected
+_NOHDMI=$(tvservice -n ) || true
+# Check to make sure it's not already in LCD mode
+_ISLCD=$(tvservice -s | grep "LCD") || true
+# HDMI is connected - turn off backlight LCD
+_HDMI=$(tvservice -s | grep "0x12000a") || true
+
+if [ -z "$_NOHDMI" ]; then
+  if [ "$_ISLCD" ]; then
+    printf "NO HDMI connected, Hyperpixel display config already active\n"
+    #do nothing
+  else
+    printf "NO HDMI connected, Switching to Hyperpixel display\n"
+    #change config to Hyperpixel and reboot since no display detected
+    sudo cp /boot/hyper-config.txt /boot/config.txt
+    sudo reboot
+  fi
+elif [ "$_NOHDMI" ]; then
+  if [ "$_ISLCD" ]; then
+    printf "HDMI is connected, but Hyperpixel config is being used\n"
+    #we need to switch to HDMI display config and reboot
+    sudo cp /boot/hdmi-config.txt /boot/config.txt
+    sudo reboot
+  elif [ "$_HDMI" ]; then
+    printf "HDMI is connected, HDMI config detected, so turning off LCD BL\n"
+    #we need to shut off the backlight on the Hyperpixel display since we aren't using it
+    #don't panic, a reboot automatically resets this - it isn't a persistent value
+    #also to do this the config.txt file needs to load the backlight module on startup
+    #to control it even if you aren't loading the overlay driver for the display
+    echo 1 | sudo tee /sys/class/backlight/rpi_backlight/bl_power
+  else
+    #debugging catchall - shouldn't happen since we expect 0x12000a - but you never know...
+    printf "HDMI is connected, HDMI config detected, your tv might not like 1920x1080 resolution\n"
+  fi
+else
+  #do nothing - based on previous if statements - you either have HDMI or you don't have it...
+  printf "Debug catchall point - sorry I can't help you out - I haven't run into the error state yet!\n"
+fi
+
+iw wlan0 set power_save off
+
+exit 0
