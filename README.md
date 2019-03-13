@@ -1,5 +1,5 @@
 # hyperpixel-hdmi-autoswitch
-Automatic switching between the Pimeroni Hyperpixel and on board HDMI
+Automatic switching between the Pimoroni Hyperpixel and on board HDMI
 ***  YOU SHOULD BACK UP YOUR /boot/config.txt BEFORE USING THIS  ***
 
 Make a backup copy of your current /etc/rc.local and replace it with the one here.
